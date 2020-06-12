@@ -312,6 +312,71 @@ const resolvers = {
         console.log(error);
       }
     },
+
+    actualizarPedido: async (_, { id, input }, ctx) => {
+
+      const { cliente } = input;
+
+      //Verificar que exista el pedido
+      const pedidoExiste = await Pedido.findOne( id );
+      if (!pedidoExiste) {
+        throw new Error('Ese pedido no existe');
+      }
+
+      //Verificar que exista el cliente
+      const clienteExiste = await Cliente.findOne({ cliente });
+      if (!clienteExiste) {
+        throw new Error('Ese cliente no existe');
+      }
+
+      //Verificar si el cliente es del vendedor
+      if (clienteExiste.vendedor.toString() !== ctx.usuario.id) {
+        throw new Error('No tienes las credenciales');
+      }
+
+      if(input.pedido){
+        //Verificar que el stock este disponible
+        for await(const articulo of input.pedido){
+          const { id } = articulo;
+          const producto = await Producto.findById(id);
+
+          if(articulo.cantidad > producto.existencia){
+            throw new Error(`El articulo: ${producto.nombre} excede la cantidad disponible`);
+          } else {
+            //Restar cantidad a lo disponible
+            producto.existencia = (producto.existencia - articulo.cantidad);
+            await producto.save();
+          }
+
+        }
+      }
+
+      //Guardar en base de datos
+      try {
+        //Guardar cliente
+        const resultado = await Pedido.findOneAndUpdate({ _id: id }, input, { new: true });
+        return resultado;
+
+      } catch (error) {
+        console.log(error);
+      }
+    },
+
+    eliminarPedido: async (_, { id }, ctx) => {
+      //Verificar que exista el pedido
+      const pedido = await Pedido.findOne( id );
+      if (!pedido) {
+        throw new Error('Ese pedido no existe');
+      }
+
+      //Verificar si el cliente es del vendedor
+      if (pedido.vendedor.toString() !== ctx.usuario.id) {
+        throw new Error('No tienes las credenciales');
+      }
+
+      await Pedido.findByIdAndDelete({ _id: id });
+      return 'Pedido eliminado';
+    },
   },
 };
 
