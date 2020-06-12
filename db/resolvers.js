@@ -75,6 +75,43 @@ const resolvers = {
 
       return cliente;
     },
+
+    //Purchases
+    obtenerPedidos: async () => {
+      try {
+        const pedidos = await Pedido.find({});
+        return pedidos;
+      } catch (error) {
+        console.log(error);
+      }
+    },
+
+    obtenerPedidosVendedor: async (_, {}, ctx) => {
+      try {
+        const pedidos = await Pedido.findById({ vendedor: ctx.usuario.id });
+        if (!pedidos) {
+          throw new Error('Pedido no encontrado');
+        }
+        return pedidos;
+      } catch (error) {
+        console.log(error);
+      }
+    },
+    
+    obtenerPedido: async (_, { id }, ctx) => {
+      const pedido = await Pedido.findById( id );
+      if (!pedido) {
+        throw new Error('Pedido no encontrado');
+      }
+
+      if (pedido.vendedor.toString() !== ctx.usuario.id) {
+        throw new Error('No tienes las credenciales');
+      }
+
+      return pedido;
+
+    },
+
   },
 
   Mutation: {
