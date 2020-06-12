@@ -26,10 +26,12 @@ const server = new ApolloServer({
 
     if (token) {
       try {
-        const usuario = jwt.verify(token, process.env.SECRET);
+        const usuario = jwt.verify(token.replace('Bearer ', ''), process.env.SECRET);
+
         return {
           usuario,
         };
+        
       } catch (error) {
         console.log('Hubo un error');
         console.log(error);
