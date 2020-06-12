@@ -1,6 +1,7 @@
 const Usuario = require('../models/Usuario');
 const Producto = require('../models/Producto');
 const Cliente = require('../models/Cliente');
+const Pedido = require('../models/Pedido');
 
 const bcryptjs = require('bcryptjs');
 const jwt = require('jsonwebtoken');
@@ -227,6 +228,48 @@ const resolvers = {
 
       await Cliente.findByIdAndDelete({ _id: id });
       return 'Cliente eliminado';
+    },
+
+    //Purchases
+    nuevoPedido: async (_, { input }, ctx) => {
+      const { cliente } = input;
+
+      //Verificar que exista el cliente
+      const clienteExiste = await Cliente.findOne({ cliente });
+      if (!clienteExiste) {
+        throw new Error('Ese cliente no existe');
+      }
+
+      //Verificar si el cliente es del vendedor
+      if (clienteExiste.vendedor.toString() !== ctx.usuario.id) {
+        throw new Error('No tienes las credenciales');
+      }
+
+      //Verificar que el stock este disponible
+      for await(const articulo of input.pedido){
+        const { id } = articulo;
+        const producto = await Producto.findById(id);
+
+        if(articulo.cantidad > producto.existencia){
+          throw new Error(`El articulo: ${producto.nombre} excede la cantidad disponible`);
+        }
+
+      }
+
+      //Crear un nuevo pedido
+      const nuevoPedido = new Pedido(input);
+
+      //Asignarle un vendedor
+      nuevoPedido.vendedor = ctx.usuario.id;
+
+      //Guardar en base de datos
+      try {
+        //Guardar cliente
+        const resultado = await nuevoPedido.save();
+        return resultado;
+      } catch (error) {
+        console.log(error);
+      }
     },
   },
 };
