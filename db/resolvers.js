@@ -252,6 +252,10 @@ const resolvers = {
 
         if(articulo.cantidad > producto.existencia){
           throw new Error(`El articulo: ${producto.nombre} excede la cantidad disponible`);
+        } else {
+          //Restar cantidad a lo disponible
+          producto.existencia = (producto.existencia - articulo.cantidad);
+          await producto.save();
         }
 
       }
